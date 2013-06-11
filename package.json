@@ -1,0 +1,22 @@
+{
+	"name": "MisEvent",
+	"title": "MisEvent for JavaScript",
+	"description": "JavaScript object method to add an event listener",
+	"version": "3.0.0",
+	"keywords": ["javascript", "class", "list"],
+	"author": "Bacra Woo <Bacra.Woo@gmail.com>",
+	"devDependencies": {
+		"grunt": "*",
+		"grunt-contrib-concat": "*",
+		"grunt-gcc": "*"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Bacra/MisEvent.js.git"
+	},
+	"main": "./lib/MisEvent.js",
+	"licenses": [{
+		"type": "MIT",
+		"url": "LICENSE.md"
+	}]
+}
