@@ -443,6 +443,7 @@
 					beforeFilterCreateFunc, afterFilterCreateFunc,
 					beforeEventParam, afterEventParam, endEventParam;
 
+				_objectEvent._runParam = {};
 				args.unshift(null); // 头部添加一个空位，添加EventParam对象
 
 
