@@ -18,7 +18,7 @@
 			}
 		}
 
-		return this;	// 放入Object时生效
+		return bindFromJSON;
 	}
 	// bindFromJSON end
 
@@ -35,25 +35,12 @@
 	}
 
 
-	function getOrInitEmitter(obj, eventName, _bindEmitter, _noTransEventNames) {
-		var emitter = _bindEmitter[eventName],
-			defaultCall;
+	function getOrInitEmitter(obj, eventName, _bindEmitter) {
+		var emitter = _bindEmitter[eventName];
 
 		if (emitter) return emitter;
 
-		defaultCall = obj[eventName];
-
-		if (!defaultCall || _noTransEventNames[eventName]) {
-			emitter = tEmitter(defaultCall, obj);
-		} else {
-			emitter = tEmitter(function(){
-				var args = toArray(arguments);
-				args.shift();
-				return defaultCall.apply(obj, args);
-			}, obj);
-		}
-		
-
+		emitter = tEmitter(obj[eventName], obj);
 		obj[eventName] = emitter['emit'];
 		_bindEmitter[eventName] = emitter;
 
@@ -69,7 +56,7 @@
 		});
 	}
 
-	function initObject(obj, _noTransEventNames, _addEventFuncName, _removeEventFuncName, _paramFuncName, _removeParamFuncName, _bindEventOnceFuncName, _triggerFuncName){
+	function initObject(obj, _addEventFuncName, _removeEventFuncName, _paramFuncName, _removeParamFuncName, _bindEventOnceFuncName, _triggerFuncName){
 
 		var _bindEmitter = {};		// inited emitter
 
@@ -83,7 +70,7 @@
 				if (!name) return;
 
 				args[0] = stepName;
-				var emitter = getOrInitEmitter(obj, name, _bindEmitter, _noTransEventNames);
+				var emitter = getOrInitEmitter(obj, name, _bindEmitter);
 				emitter['on'].apply(emitter, args);
 			});
 
@@ -127,14 +114,14 @@
 		obj[_paramFuncName] = function(eventName, data, widthBaseParam){
 			if (!eventName) return this;
 
-			return getOrInitEmitter(obj, eventName, _bindEmitter, _noTransEventNames)['param'](data, widthBaseParam);
+			return getOrInitEmitter(obj, eventName, _bindEmitter)['param'](data, widthBaseParam);
 		};
 
 		// REMOVE PARAM EVENT
 		obj[_removeParamFuncName] = function(eventName, name, widthBaseParam){
 			if (!eventName) return this;
 
-			return getOrInitEmitter(obj, eventName, _bindEmitter, _noTransEventNames)['removeParam'](name, widthBaseParam);
+			return getOrInitEmitter(obj, eventName, _bindEmitter)['removeParam'](name, widthBaseParam);
 		};
 
 		// ONE EVENT
@@ -146,7 +133,7 @@
 				if (!name) return;
 
 				args[0] = stepName;
-				var emitter = getOrInitEmitter(obj, name, _bindEmitter, _noTransEventNames);
+				var emitter = getOrInitEmitter(obj, name, _bindEmitter);
 				emitter['once'].apply(emitter, args);
 			});
 
@@ -184,28 +171,16 @@
 			_bindEventOnceFuncName = config['bindEventOnceFuncName'] || 'one',
 			_triggerFuncName = config['triggerFuncName'] || 'trigger';
 
-		var _noTransEventNames = {};
-
 		forEach([_addEventFuncName, _removeEventFuncName, _paramFuncName, _removeParamFuncName, _bindEventOnceFuncName, _triggerFuncName], function(bindName){
 			cla.prototype[bindName] = function(eventName){
 				if (!eventName) return this;
 
-				initObject(this, _noTransEventNames, _addEventFuncName, _removeEventFuncName, _paramFuncName, _removeParamFuncName, _bindEventOnceFuncName, _triggerFuncName);
+				initObject(this, _addEventFuncName, _removeEventFuncName, _paramFuncName, _removeParamFuncName, _bindEventOnceFuncName, _triggerFuncName);
 
 				return this[bindName].apply(this, arguments);
 			};
 		});
 		
 
-		return {
-			'bindFromJSON': bindFromJSON,
-			'initEvent': function(eventNames){
-				forEach(eventNames.split(blankReg), function(eventName){
-					if (!eventName) return;
-					_noTransEventNames[eventName] = true;
-				});
-
-				return this;
-			}
-		};
+		return bindFromJSON;
 	};
