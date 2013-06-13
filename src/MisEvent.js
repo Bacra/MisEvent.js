@@ -1,12 +1,27 @@
-	var blankReg = / +/,
-		bindFromConfigPreg = /^on[A-Z]/;
+	var blankReg = / +/;
 
-	function bindFromConfigReplaceFunc(matchStr){
+
+	// bindFromJSON begin
+	var bindFromJSONPreg = /^on[A-Z]/;
+	function bindFromJSONReplaceFunc(matchStr){
 		return matchStr.substring(2).toLowerCase();
 	}
 	function isFunction(func){
 		return func && typeof(func) == 'function';
 	}
+	function bindFromJSON(obj, config){
+		var v;
+		for (var i in config) {
+			v = config[i];
+			if (v && isFunction(v) && bindFromJSONPreg.test(i)) {
+				obj['on'](i.replace(bindFromJSONPreg, bindFromJSONReplaceFunc), v);
+			}
+		}
+
+		return this;	// 放入Object时生效
+	}
+	// bindFromJSON end
+
 
 
 
@@ -19,11 +34,28 @@
 		}
 	}
 
-	function initEmitter(obj, eventName){
-		var defaultCall = obj[eventName];
-		var emitter = tEmitter(defaultCall, obj);
 
-		obj[eventName] = emitter.emit;
+	function getOrInitEmitter(obj, eventName, _bindEmitter, _noTransEventNames) {
+		var emitter = _bindEmitter[eventName],
+			defaultCall;
+
+		if (emitter) return emitter;
+
+		defaultCall = obj[eventName];
+
+		if (!defaultCall || _noTransEventNames[eventName]) {
+			emitter = tEmitter(defaultCall, obj);
+		} else {
+			emitter = tEmitter(function(){
+				var args = toArray(arguments);
+				args.shift();
+				return defaultCall.apply(obj, args);
+			}, obj);
+		}
+		
+
+		obj[eventName] = emitter['emit'];
+		_bindEmitter[eventName] = emitter;
 
 		return emitter;
 	}
@@ -37,8 +69,9 @@
 		});
 	}
 
-	function initObject(obj, _addEventFuncName, _removeEventFuncName, _paramFuncName, _removeParamFuncName, _bindEventOnceFuncName, _triggerFuncName){
-		var _bindEmitter = {};
+	function initObject(obj, _noTransEventNames, _addEventFuncName, _removeEventFuncName, _paramFuncName, _removeParamFuncName, _bindEventOnceFuncName, _triggerFuncName){
+
+		var _bindEmitter = {};		// inited emitter
 
 		// ON EVENT
 		obj[_addEventFuncName] = function(eventName){
@@ -48,14 +81,10 @@
 
 			parseEventName(eventName, function(name, stepName){
 				if (!name) return;
-				
-				var emitter = _bindEmitter[name];
-				if (!emitter) {
-					emitter = _bindEmitter[name] = initEmitter(obj, name);
-				}
 
 				args[0] = stepName;
-				emitter.on.apply(emitter, args);
+				var emitter = getOrInitEmitter(obj, name, _bindEmitter, _noTransEventNames);
+				emitter['on'].apply(emitter, args);
 			});
 
 			return this;
@@ -66,25 +95,25 @@
 			var i;
 			if (!eventName) {
 				for(i in _bindEmitter) {
-					_bindEmitter[i].off();
+					_bindEmitter[i]['off']();
 				}
 			} else if (typeof(eventName) == 'function') {
 				for(i in _bindEmitter) {
-					_bindEmitter[i].off(eventName);
+					_bindEmitter[i]['off'](eventName);
 				}
 			} else {
 				parseEventName(eventName, function(name, stepName){
 					if (!name) {
 						for(var i in _bindEmitter) {
-							_bindEmitter[i].off(stepName, func);
+							_bindEmitter[i]['off'](stepName, func);
 						}
 					} else {
 						var emitter = _bindEmitter[name];
 						if (emitter) {
 							if (stepName) {
-								emitter.off(stepName, func);
+								emitter['off'](stepName, func);
 							} else {
-								emitter.off(func);
+								emitter['off'](func);
 							}
 						}
 					}
@@ -98,22 +127,14 @@
 		obj[_paramFuncName] = function(eventName, data, widthBaseParam){
 			if (!eventName) return this;
 
-			var emitter = _bindEmitter[eventName];
-			if (!emitter) {
-				emitter = _bindEmitter[eventName] = initEmitter(obj, eventName);
-			}
-			return emitter.param(data, widthBaseParam);
+			return getOrInitEmitter(obj, eventName, _bindEmitter, _noTransEventNames)['param'](data, widthBaseParam);
 		};
 
 		// REMOVE PARAM EVENT
 		obj[_removeParamFuncName] = function(eventName, name, widthBaseParam){
 			if (!eventName) return this;
 
-			var emitter = _bindEmitter[eventName];
-			if (!emitter) {
-				emitter = _bindEmitter[eventName] = initEmitter(obj, eventName);
-			}
-			return emitter.removeParam(name, widthBaseParam);
+			return getOrInitEmitter(obj, eventName, _bindEmitter, _noTransEventNames)['removeParam'](name, widthBaseParam);
 		};
 
 		// ONE EVENT
@@ -123,14 +144,10 @@
 
 			parseEventName(eventName, function(name, stepName){
 				if (!name) return;
-				
-				var emitter = _bindEmitter[name];
-				if (!emitter) {
-					emitter = _bindEmitter[name] = initEmitter(obj, name);
-				}
 
 				args[0] = stepName;
-				emitter.once.apply(emitter, args);
+				var emitter = getOrInitEmitter(obj, name, _bindEmitter, _noTransEventNames);
+				emitter['once'].apply(emitter, args);
 			});
 
 			return this;
@@ -143,13 +160,20 @@
 				if (emitter) {
 					var args = toArray(arguments);
 					args.shift();
-					return emitter.trigger.apply(emitter, args);
+					return emitter['trigger'].apply(emitter, args);
+				} else if (obj[eventName]){		// 普通方法
+					return obj[eventName].apply(obj, arguments);
 				}
 			}
 		};
 	}
 
 
+
+
+
+
+	// main
 	return function(cla, config){
 		if (!config) config = {};
 
@@ -160,23 +184,28 @@
 			_bindEventOnceFuncName = config['bindEventOnceFuncName'] || 'one',
 			_triggerFuncName = config['triggerFuncName'] || 'trigger';
 
+		var _noTransEventNames = {};
 
 		forEach([_addEventFuncName, _removeEventFuncName, _paramFuncName, _removeParamFuncName, _bindEventOnceFuncName, _triggerFuncName], function(bindName){
 			cla.prototype[bindName] = function(eventName){
 				if (!eventName) return this;
-				initObject(this, _addEventFuncName, _removeEventFuncName, _paramFuncName, _removeParamFuncName, _bindEventOnceFuncName, _triggerFuncName);
+
+				initObject(this, _noTransEventNames, _addEventFuncName, _removeEventFuncName, _paramFuncName, _removeParamFuncName, _bindEventOnceFuncName, _triggerFuncName);
+
 				return this[bindName].apply(this, arguments);
 			};
 		});
 		
 
-		return function(obj, config){		// bindFromConfig
-			var v;
-			for (var i in config) {
-				v = config[i];
-				if (v && isFunction(v) && bindFromConfigPreg.test(i)) {
-					obj['on'](i.replace(bindFromConfigPreg, bindFromConfigReplaceFunc), v);
-				}
+		return {
+			'bindFromJSON': bindFromJSON,
+			'initEvent': function(eventNames){
+				forEach(eventNames.split(blankReg), function(eventName){
+					if (!eventName) return;
+					_noTransEventNames[eventName] = true;
+				});
+
+				return this;
 			}
 		};
 	};
