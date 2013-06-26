@@ -1,4 +1,1 @@
-/** @define {boolean} */
-var DEBUG = true;
-
-window['MisEvent'] = (function(undefined) {
+var MisEvent = (function(undefined) {

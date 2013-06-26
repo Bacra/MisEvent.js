@@ -2,7 +2,7 @@
 	"name": "MisEvent",
 	"title": "MisEvent for JavaScript",
 	"description": "JavaScript object method to add an event listener",
-	"version": "3.0.1",
+	"version": "4.0.0",
 	"keywords": ["javascript", "class", "list"],
 	"author": "Bacra Woo <Bacra.Woo@gmail.com>",
 	"devDependencies": {

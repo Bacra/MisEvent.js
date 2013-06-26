@@ -28,7 +28,6 @@ module.exports = function(grunt) {
 				src: 'dist/MisEvent.js',
 				dest: 'dist/MisEvent.min.js',
 				options: {
-					define: 'DEBUG=false',
 					source_map_format: 'V3',
 					create_source_map: 'dist/MisEvent.js.map'
 				}
