@@ -1,0 +1,2 @@
+dist/* -crlf -diff
+lib/* -crlf -diff
