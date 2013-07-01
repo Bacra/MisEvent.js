@@ -8,6 +8,7 @@
 	"devDependencies": {
 		"grunt": "*",
 		"grunt-contrib-concat": "*",
+		"grunt-contrib-qunit": "*",
 		"grunt-gcc": "*"
 	},
 	"repository": {

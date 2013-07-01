@@ -1,3 +1,7 @@
 [submodule "test/tEmitter"]
 	path = test/tEmitter
 	url = git://github.com/Bacra/tEmitter.js.git
+
+[submodule "test/qunit"]
+	path = test/qunit
+	url = git://github.com/jquery/qunit
