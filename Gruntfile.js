@@ -32,8 +32,13 @@ module.exports = function(grunt) {
 					create_source_map: 'dist/MisEvent.js.map'
 				}
 			}
-		}
+		},
 
+		qunit: {
+			qunit: [
+				"test/test.html"
+			]
+		}
 	});
 
 
@@ -67,6 +72,8 @@ module.exports = function(grunt) {
 
 	grunt.loadNpmTasks('grunt-gcc');
 	grunt.loadNpmTasks('grunt-contrib-concat');
+	grunt.loadNpmTasks('grunt-contrib-qunit');
 
-	grunt.registerTask('default', ['concat', 'gcc', 'fix', 'backup']);
+	grunt.registerTask('default', ['concat:js', 'qunit']);
+	grunt.registerTask('export', ['concat', 'qunit', 'gcc', 'fix', 'backup']);
 };

@@ -22,7 +22,7 @@ MisEvent
 * `removeEventFuncName` => `off`
 * `paramFuncName` => `param`
 * `removeParamFuncName` => `removeParam`
-* `bindEventOnceFuncName` => `one`
+* `bindEventOnceFuncName` => `once`
 * `triggerFuncName` => `trigger`
 
 更多信息及实例请关注 [Wiki](https://github.com/Bacra/MisEvent.js/wiki) 页面；
