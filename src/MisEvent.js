@@ -168,7 +168,7 @@
 			_removeEventFuncName = config['removeEventFuncName'] || 'off',
 			_paramFuncName = config['paramFuncName'] || 'param',
 			_removeParamFuncName = config['removeParamFuncName'] || 'removeParam',
-			_bindEventOnceFuncName = config['bindEventOnceFuncName'] || 'one',
+			_bindEventOnceFuncName = config['bindEventOnceFuncName'] || 'once',
 			_triggerFuncName = config['triggerFuncName'] || 'trigger';
 
 		forEach([_addEventFuncName, _removeEventFuncName, _paramFuncName, _removeParamFuncName, _bindEventOnceFuncName, _triggerFuncName], function(bindName){
