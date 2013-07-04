@@ -75,5 +75,5 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-contrib-qunit');
 
 	grunt.registerTask('default', ['concat:js', 'qunit']);
-	grunt.registerTask('exports', ['concat', 'qunit', 'gcc', 'fix', 'backup']);
+	grunt.registerTask('export', ['concat', 'qunit', 'gcc', 'fix', 'backup']);
 };
