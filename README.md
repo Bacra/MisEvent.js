@@ -1,7 +1,7 @@
 MisEvent
 ========
 
-`MisEvent` 是针对 [tEmitter](/Bacra/tEmitter.js)项目的一个实例化补充
+`MisEvent` 是针对 [tEmitter](https://github.com/Bacra/tEmitter.js)项目的一个实例化补充
 
 使用`MisEvent`可以很方便地针对具体的类，增加事件绑定相关函数，具体见`tEmitter`项目
 
@@ -22,7 +22,7 @@ MisEvent
 * `removeEventFuncName` => `off`
 * `paramFuncName` => `param`
 * `removeParamFuncName` => `removeParam`
-* `bindEventOnceFuncName` => `one`
+* `bindEventOnceFuncName` => `once`
 * `triggerFuncName` => `trigger`
 
 更多信息及实例请关注 [Wiki](./wiki) 页面；
