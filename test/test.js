@@ -1,10 +1,3 @@
-function forEach(arr, callback){
-	for (var i = 0, num = arr.length; i < num; i++) {
-		callback(arr[i], i);
-	}
-}
-
-
 function createAndInitClass(runCall){
 	var TestClass = function(){
 		this.runTimes = 0;
@@ -16,72 +9,6 @@ function createAndInitClass(runCall){
 	MisEvent(TestClass);
 	return new TestClass();
 }
-
-
-function Test(runTimes, groupName, isDefaultRun, doSomeThing, defaultFn, claConfig) {
-	console.group(groupName);
-
-	this.isDefaultRun = isDefaultRun;
-	this._defaultFnRuned = false;
-	this._runTimeIndex = 0;
-
-	var self = this,
-		TestClass = function(){};
-	TestClass.prototype.done = function(){
-		self._defaultFnRuned = true;
-		if (defaultFn) defaultFn.call(this, self);
-	};
-	MisEvent(TestClass, claConfig);
-
-	this._testObj = new TestClass();
-	this._assertList = [];
-
-	// 快速添加测试方法
-	if (doSomeThing) {
-		doSomeThing(this._testObj, this);
-	}
-
-	this.done(runTimes);
-};
-Test.prototype = {
-	'getTestObj': function(){
-		return this._testObj;
-	},
-	'getRunTimeIndex': function(){
-		return this._runTimeIndex;
-	},
-	'done': function(runTimes){
-		while(runTimes --){
-			this._runTimeIndex++;
-			this._testObj.done.apply(this._testObj, arguments);
-		}
-
-		this.assert(this.isDefaultRun == this._defaultFnRuned, '默认方法'+ (this.isDefaultRun ? '未' : '') +'执行');
-
-		var self = this;
-		forEach(this._assertList, function(v){
-			self.assert(v.runTimes == v.initRunTimes, '['+v.runTimes+'/'+v.initRunTimes+' '+self._runTimeIndex+'] ' + v.commint);
-		});
-		console.log('=> 测试结束');
-		console.groupEnd();
-
-		this._runTimeIndex = 0;
-	},
-	'addAssert': function(initRunTimes, commint) {
-		var assert = {
-			'initRunTimes': initRunTimes,
-			'runTimes': 0,
-			'commint': commint
-		};
-		this._assertList.push(assert);
-		return function(){
-			assert.runTimes++;
-		};
-	},
-	'assert': function(rs, commint){
-		console.assert(rs, commint);
-	}
-};
 
 
 
@@ -114,6 +41,17 @@ test('bind method and run times', 3, function(){
 	obj.run();
 	obj.run();
 	equal(runTimes, 4, 'run '+runTimes+'/4 times');
+});
+
+test('bind more func once', 1, function(){
+	var obj = createAndInitClass(),
+		runTimes = 0;
+
+	obj.on('run run.after run.before run.final run.unname', function(){
+		runTimes++;
+	});
+	obj.run();
+	equal(runTimes, 5, 'bind more func once');
 });
 
 test('bind more Event and run in order', 6*3, function(){
@@ -163,20 +101,114 @@ test('bind when method has runned', 2, function(){
 });
 
 
+
+
+////////////////////////
+module('off Method');
+test('off method', 3, function(){
+	var obj = createAndInitClass(),
+		func = function(){
+			hasRuned = true;
+		},
+		runTimes = 0,
+		hasRuned = false;
+
+	obj.on('run', function(){
+		runTimes++;
+	});
+	obj.on('run', func);
+	obj.on('run', function(){
+		runTimes++;
+	});
+
+	obj.off(func);
+
+	obj.run();
+	obj.run();
+	obj.run();
+	ok(!hasRuned, 'off the method which bind justnow');
+	equal(runTimes, 2*3, 'no off method run times:'+runTimes+'/2');
+
+	obj.off();
+	obj.run();
+	obj.run();
+
+	equal(runTimes, 2*3, 'off all method');
+});
+
+test('off method width Event object', 2, function(){
+	var obj = createAndInitClass(),
+		runTimes = 0;
+	obj.on('run', function(e){
+		runTimes++;
+		e.offSelf();
+	});
+
+	obj.run();
+	equal(runTimes, 1, 'method has runned');
+	obj.run();
+	obj.run();
+	obj.run();
+	equal(runTimes, 1, 'method has off');
+});
+
+
+
+
+///////////////////////
+module('bind once');
+test('once method', 2, function(){
+	var obj = createAndInitClass(),
+		runTimes = 0;
+	obj.once('run', function(){
+		runTimes++;
+	});
+	obj.run();
+	equal(runTimes, 1, 'method has runned');
+
+	obj.run();
+	obj.run();
+	obj.run();
+	equal(runTimes, 1, 'method has off');
+});
+
+
+
+
+///////////////////////
+module('dynamically add methods');
+test('on init method', 1, function(){
+	var obj = createAndInitClass(),
+		hasRuned = false;
+	obj.on('run2', function(){
+		hasRuned = true;
+	});
+	obj.run2();
+	
+	ok(hasRuned, 'the method which dynamically add has runned');
+});
+
+
+
+
+
 ////////////////////////
 module('bind method width Event');
-test('Check param of the Event', 9, function(){
+test('Check param of the Event', 12, function(){
 	var obj = createAndInitClass();
 	obj.on('run', function(e){
 		ok(e, 'width Event param');
 		ok(e && e.data, 'Event param has `data`');
+		ok(e && e.on, 'Event param has `on` method');
+		ok(e && e.off, 'Event param has `off` method');
+		ok(e && e.once, 'Event param has `data` method');
 		ok(e && e.param, 'Event param has `param`');
 		ok(e && e.removeParam, 'Event param has `removeParam`');
-		ok(e && e.off, 'Event param has `off`');
-		ok(e && e.preventDefault, 'Event param has `preventDefault`');
-		ok(e && e.overrideDefault, 'Event param has `overrideDefault`');
-		ok(e && e.setDefaultReturn, 'Event param has `setDefaultReturn`');
-		ok(e && e.async, 'Event param has `async`');
+		ok(e && e.offSelf, 'Event param has `offSelf` method');
+		ok(e && e.preventDefault, 'Event param has `preventDefault` method');
+		ok(e && e.overrideDefault, 'Event param has `overrideDefault` method');
+		ok(e && e.setDefReturn, 'Event param has `setDefReturn` method');
+		ok(e && e.async, 'Event param has `async` method');
 	});
 	obj.run();
 });
@@ -202,7 +234,7 @@ test('exta data', 3, function(){
 });
 
 
-test('preventDefault', 3, function(){
+test('preventDefault', 4, function(){
 	var obj = createAndInitClass(),
 		runTimes = 0;
 
@@ -218,9 +250,16 @@ test('preventDefault', 3, function(){
 
 	obj.run();
 	obj.run();
-
 	equal(runTimes, 2, 'bind method runned');
 	equal(obj.runTimes, 1, 'default method is prevented');
+
+	obj.on('run', function(e){
+		e.preventDefault('setDefReturn');
+		equal(e.defReturn, 'setDefReturn', 'setDefReturn by preventDefault method');
+	});
+
+	obj.run();
+
 });
 
 
@@ -249,78 +288,92 @@ test('next', 5, function(){
 });
 
 
+test('overrideDefault', 4, function(){
+	var obj = createAndInitClass();
+	obj.once('run', function(e){
+		e.overrideDefault(function(){
+			return 5;
+		});
+	});
+	obj.once('run', function(e){
+		ok(!e.defReturn, 'do not has defReturn in before query');
+	});
+	obj.once('run.after', function(e){
+		equal(e.defReturn, 5, 'defReturn is 5');
+	});
 
-////////////////////////
-module('off Method');
-test('off method', 3, function(){
+	obj.run();
+	equal(obj.runTimes, 0, 'defaultFunc is prevented');
+
+	obj.once('run.after', function(e){
+		ok(!e.defReturn, 'defaultFuc reset');
+	});
+
+	obj.run();
+});
+
+test('defReturn and setDefReturn', 7, function(){
+	var obj = createAndInitClass();
+
+	// setDef normal
+	obj.once('run.after', function(e){
+		e.setDefReturn(4);
+		equal(e.defReturn, 4, 'setDefReturn in after query');
+	});
+	obj.run();
+
+	// setDef in before query
+	obj.once('run', function(e){
+		var rs = e.setDefReturn(1);
+		ok(!rs, 'can not set defReturn');
+		ok(!e.defReturn, 'do not setDefReturn');
+
+		e.overrideDefault();
+		rs = e.setDefReturn(2);
+		ok(rs, 'now can set defReturn');
+		equal(e.defReturn, 2, 'set defReturn success');
+	});
+
+	// run defCall defReturn is reseted
+	obj.once('run.after', function(e){
+		ok(!e.defReturn, 'defReturn reset to `undefined`');
+	});
+
+	obj.run();
+
+	// defReturn param can not modify directly
+	obj.on('run.after', function(e){
+		e.defReturn = 8;
+	});
+	obj.on('run.after', function(e){
+		ok(!e.defReturn, 'defReturn param can not modify directly');
+	});
+	obj.run();
+});
+
+
+asyncTest('async', 3, function(){
 	var obj = createAndInitClass(),
 		func = function(){
-			hasRuned = true;
+			runTimes++;
 		},
-		runTImes = 0,
-		hasRuned = false;
-
-	obj.on('run', function(){
-		runTImes++;
-	});
+		runTimes = 0;
 	obj.on('run', func);
-	obj.on('run', function(){
-		runTImes++;
-	});
-
-	obj.off(func);
-
-	obj.run();
-	obj.run();
-	obj.run();
-	ok(!hasRuned, 'off the method which bind justnow');
-	equal(runTImes, 2*3, 'no off method run times:'+runTImes+'/2');
-
-	obj.off();
-	obj.run();
-	obj.run();
-
-	equal(runTImes, 2*3, 'off all method');
-});
-
-test('off method width Event object', 2, function(){
-	var obj = createAndInitClass(),
-		runTimes = 0;
 	obj.on('run', function(e){
-		runTimes++;
-		e.off();
+		var done = e.async();
+		setTimeout(function(){
+			done();
+			equal(runTimes, 4, 'after async');
+			done();
+			equal(runTimes, 4, 'run async done method again');
+			start();
+		}, 100);
 	});
+	obj.on('run.after run run.final', func);
 
 	obj.run();
-	equal(runTimes, 1, 'method has runned');
-	obj.run();
-	obj.run();
-	obj.run();
-	equal(runTimes, 1, 'method has off');
+	equal(runTimes, 1, 'before async');
 });
-
-
-
-
-///////////////////////
-module('bind once');
-test('one method', 2, function(){
-	var obj = createAndInitClass(),
-		runTimes = 0;
-	obj.one('run', function(){
-		runTimes++;
-	});
-	obj.run();
-	equal(runTimes, 1, 'method has runned');
-
-	obj.run();
-	obj.run();
-	obj.run();
-	equal(runTimes, 1, 'method has off');
-});
-
-
-
 
 
 
@@ -331,13 +384,13 @@ module('deal param');
 test('base param', 1+6+ 4*3, function(){
 	var obj = createAndInitClass();
 	obj.param('run', {'base1': true, 'base2': true, 'base3': true}, true);
-	obj.one('run', function(e){
+	obj.once('run', function(e){
 		ok(e.param.base1, 'base1 has init');
 		e.param.base1 = false;
 		e.param({'base2': false, 'base4': true}, true);
 	});
 
-	obj.one('run', function(e){
+	obj.once('run', function(e){
 		ok(e.param.base3, 'base3 is extsis in 2nd method');
 		ok(!e.param.base1, 'base1 switch to false');
 
@@ -367,12 +420,12 @@ test('base param', 1+6+ 4*3, function(){
 test('temp param', 1+6+4+2*3, function(){
 	var obj = createAndInitClass();
 	obj.param('run', {'temp1': true, 'temp2': true, 'temp3': true});
-	obj.one('run', function(e){
+	obj.once('run', function(e){
 		ok(e.param.temp1, 'temp1 has init');
 		e.param.temp1 = false;
 		e.param({'temp2': false, 'temp4': true});
 	});
-	obj.one('run', function(e){
+	obj.once('run', function(e){
 		ok(e.param.temp3, true, 'temp3 is extsis in 2nd method');
 		ok(!e.param.temp1, 'temp1 switch to false');
 
@@ -387,7 +440,7 @@ test('temp param', 1+6+4+2*3, function(){
 
 	obj.run();
 
-	obj.one('run', function(e){
+	obj.once('run', function(e){
 		ok(!e.param.temp1, '#2 temp1 is cleared');
 		ok(!e.param.temp3, '#2 temp3 is cleared');
 		deepEqual(e.param.temp2, false, '#2 temp2 switch to false');
@@ -477,20 +530,6 @@ test('on in default', 1, function(){
 });
 
 
-
-
-///////////////////////
-module('dynamically add methods');
-test('on init method', 1, function(){
-	var obj = createAndInitClass(),
-		hasRuned = false;
-	obj.on('run2', function(){
-		hasRuned = true;
-	});
-	obj.run2();
-	
-	ok(hasRuned, 'the method which dynamically add has runned');
-});
 
 
 
